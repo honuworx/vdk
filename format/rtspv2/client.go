@@ -274,6 +274,7 @@ func (client *RTSPClient) startStream() {
 			timer = time.Now()
 		}
 		if !fixed {
+			header = nil
 			nb, err := io.ReadFull(client.connRW, header)
 			if err != nil || nb != 4 {
 				client.Println("RTSP Client RTP Read Header", err)
