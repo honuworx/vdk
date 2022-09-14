@@ -348,7 +348,7 @@ func (client *RTSPClient) startStream() {
 			}
 		default:
 			client.Println("RTSP Client RTP Read DeSync")
-			return
+			//return
 		}
 	}
 }
