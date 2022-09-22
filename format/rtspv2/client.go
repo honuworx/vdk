@@ -274,7 +274,7 @@ func (client *RTSPClient) startStream() {
 			client.Println("RTSP Client RTP SetDeadline", err)
 			return
 		}
-		if int(time.Now().Sub(timer).Seconds()) > 25 {
+		if time.Since(timer) > (10 * time.Second) {
 			err := client.request(OPTIONS, map[string]string{"Require": "implicit-play"}, client.control, false, true)
 			if err != nil {
 				client.Println("RTSP Client RTP keep-alive", err)
@@ -287,21 +287,27 @@ func (client *RTSPClient) startStream() {
 
 		first[0] = 0x00
 		first[1] = 0x00 //TODO: Find a way to inject an expected channel identifier
-		for !(first[0] == 0x24 || first[0] == 0x52) || first[1] != 0x0 {
+		retry := 0
+		for !(first[0] == 0x24 || first[0] == 0x52) {
 			nb, err := io.ReadFull(client.connRW, first)
 			if err != nil || nb != 2 {
 				client.Println("RTSP Client RTP Read Header", err)
 				return
 			}
-		}
 
-		header[0] = first[0]
-		header[1] = first[1]
+			if first[0] == 0x24 || first[0] == 0x52 {
+				header[0] = first[0]
+				header[1] = first[1]
 
-		nb, err := io.ReadFull(client.connRW, header[2:])
-		if err != nil || nb != 2 {
-			client.Println("RTSP Client RTP Read Header", err)
-			return
+				nb, err := io.ReadFull(client.connRW, header[2:])
+				if err != nil || nb != 2 {
+					client.Println("RTSP Client RTP Read Header", err)
+					return
+				}
+				break
+			}
+
+			retry = retry + 1
 		}
 
 		switch header[0] {
@@ -388,6 +394,7 @@ func (client *RTSPClient) startStream() {
 
 func (client *RTSPClient) sendRR(metaData RTPMetadata) (err error) {
 	client.Println("Sending ReceiverReport", metaData)
+
 	err = client.conn.SetDeadline(time.Now().Add(client.options.ReadWriteTimeout))
 	if err != nil {
 		client.Println("Error setting connection timeout: ", err)
@@ -412,12 +419,20 @@ func (client *RTSPClient) sendRR(metaData RTPMetadata) (err error) {
 
 	data, err := rr.Marshal()
 
+	packet := make([]byte, 4)
+
+	packet[0] = 0x24
+	packet[1] = 0x01
+	binary.BigEndian.PutUint16(packet[2:], uint16(len(data)))
+
+	packet = append(packet, data...)
+
 	if err != nil {
 		client.Println("Error marshalling receiver report: ", err)
 		return
 	}
 
-	nb, err := client.connRW.Write(data)
+	nb, err := client.connRW.Write(packet)
 
 	if err != nil || nb == 0 {
 		client.Println("Error sending receiver report: ", err)
@@ -647,16 +662,7 @@ func (client *RTSPClient) RTPDemuxer(payloadRAW *[]byte) ([]*av.Packet, bool, RT
 	metaData.SeqNumber = SequenceNumber
 
 	if isRTCPPacket(content) {
-		client.Println("Processing RTCP packet")
-		rtcpPacketType := content[5]
-		if rtcpPacketType == RTCPSenderReport {
-			srr := rtcp.SenderReport{}
-			srr.Unmarshal(content)
-
-			client.Println(srr)
-		} else {
-			client.Println("skipping RTCP packet")
-		}
+		client.Println("skipping RTCP packet")
 		return nil, false, metaData
 	}
 
