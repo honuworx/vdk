@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/google/uuid v1.3.0
 	github.com/pion/interceptor v0.1.11
+	github.com/pion/rtcp v1.2.10
 	github.com/pion/webrtc/v2 v2.2.26
 	github.com/pion/webrtc/v3 v3.1.42
 )
@@ -21,7 +22,6 @@ require (
 	github.com/pion/mdns v0.0.5 // indirect
 	github.com/pion/quic v0.1.1 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
-	github.com/pion/rtcp v1.2.10 // indirect
 	github.com/pion/rtp v1.7.13 // indirect
 	github.com/pion/sctp v1.8.2 // indirect
 	github.com/pion/sdp/v2 v2.4.0 // indirect
@@ -33,6 +33,6 @@ require (
 	github.com/pion/turn/v2 v2.0.8 // indirect
 	github.com/pion/udp v0.1.1 // indirect
 	golang.org/x/crypto v0.0.0-20220516162934-403b01795ae8 // indirect
-	golang.org/x/net v0.0.0-20220531201128-c960675eff93 // indirect
-	golang.org/x/sys v0.0.0-20220608164250-635b8c9b7f68 // indirect
+	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
 )
